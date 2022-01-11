@@ -1,0 +1,360 @@
+import java.lang.*;
+import java.util.HashMap;
+
+class SudokuCreator
+{
+    static int[][] mat;
+    int N; // colum ve row sayısı
+    int SRN; // N in karekökü
+    int K; // boş yerlerin sayısı
+
+    // Constructor
+    public SudokuCreator(int N, int K)
+    {
+        this.N = N;
+        this.K = K;
+
+        // SRN yi hesapla
+        Double SRNd = Math.sqrt(N);
+        SRN = SRNd.intValue();
+
+        mat = new int[N][N];
+
+    }
+
+
+
+    // Sudoku Generator
+    public void fillValues()
+    {
+        // SRN x SRN matriksininin diyagonallarını doldur
+        fillDiagonal();
+
+        // geriye kalan kısımları doldur
+        fillRemaining(0, SRN);
+
+        // K ları sil
+        removeKDigits();
+    }
+    // Diyagonal
+    void fillDiagonal()
+    {
+
+        for (int i = 0; i<N; i=i+SRN)
+
+            fillBox(i, i);
+    }
+
+    // 3x3 içerisinde sudokuyu check et
+    boolean unUsedInBox(int rowStart, int colStart, int num)
+    {
+        for (int i = 0; i<SRN; i++)
+            for (int j = 0; j<SRN; j++)
+                if (mat[rowStart+i][colStart+j]==num)
+                    return false;
+
+        return true;
+    }
+
+    // 3x3 matriks doldur
+    void fillBox(int row,int col)
+    {
+        int num;
+        for (int i=0; i<SRN; i++)
+        {
+            for (int j=0; j<SRN; j++)
+            {
+                do
+                {
+                    num = randomGenerator(N);
+                }
+                while (!unUsedInBox(row, col, num));
+
+                mat[row+i][col+j] = num;
+            }
+        }
+    }
+
+    // Random generator
+    int randomGenerator(int num)
+    {
+        return (int) Math.floor((Math.random()*num+1));
+    }
+
+    // kutuya koymak için uygun mu değil mi check et
+    boolean CheckIfSafe(int i,int j,int num)
+    {
+        return (unUsedInRow(i, num) &&
+                unUsedInCol(j, num) &&
+                unUsedInBox(i-i%SRN, j-j%SRN, num));
+    }
+
+    // row da check et
+    boolean unUsedInRow(int i,int num)
+    {
+        for (int j = 0; j<N; j++)
+            if (mat[i][j] == num)
+                return false;
+        return true;
+    }
+
+    // colum da check et
+    boolean unUsedInCol(int j,int num)
+    {
+        for (int i = 0; i<N; i++)
+            if (mat[i][j] == num)
+                return false;
+        return true;
+    }
+
+    // recursive
+    boolean fillRemaining(int i, int j)
+    {
+        //  System.out.println(i+" "+j);
+        if (j>=N && i<N-1)
+        {
+            i = i + 1;
+            j = 0;
+        }
+        if (i>=N && j>=N)
+            return true;
+
+        if (i < SRN)
+        {
+            if (j < SRN)
+                j = SRN;
+        }
+        else if (i < N-SRN)
+        {
+            if (j==(int)(i/SRN)*SRN)
+                j =  j + SRN;
+        }
+        else
+        {
+            if (j == N-SRN)
+            {
+                i = i + 1;
+                j = 0;
+                if (i>=N)
+                    return true;
+            }
+        }
+
+        for (int num = 1; num<=N; num++)
+        {
+            if (CheckIfSafe(i, j, num))
+            {
+                mat[i][j] = num;
+                if (fillRemaining(i, j+1))
+                    return true;
+
+                mat[i][j] = 0;
+            }
+        }
+        return false;
+    }
+
+    // K ları sil
+    public void removeKDigits()
+    {
+        int count = K;
+        while (count != 0)
+        {
+            int cellId = randomGenerator(N*N);
+
+
+            int i = (cellId/N);
+            if (i==9)
+                i--;
+            int j = cellId%9;
+            if (j != 0)
+                j = j - 1;
+            if (mat[i][j] != 0)
+            {
+                count--;
+                mat[i][j] = 0;
+            }
+        }
+    }
+
+    // Print 
+    public void printSudoku()
+    {
+        HashMap<Integer, String> keys = new HashMap<Integer, String>();
+        keys.put(0, "0");
+        keys.put(1, "C");
+        keys.put(2, "N");
+        keys.put(3, "G");
+        keys.put(4, "B");
+        keys.put(5, "I");
+        keys.put(6, "M");
+        keys.put(7, "2");
+        keys.put(8, "1");
+        keys.put(9, "3");
+        for (int i = 0; i<N; i++)
+        {
+            for (int j = 0; j<N; j++)
+                System.out.print(keys.get(mat[i][j]) + " ");
+            System.out.println();
+        }
+        System.out.println();
+    }
+
+    /////SOLVE SOLVE SOLVE SOLVE SOLVE SOLVE SOLVE
+
+    public static boolean isSafe(int[][] board,
+                                 int row, int col,
+                                 int num)
+    {
+        // row unique
+        for (int d = 0; d < board.length; d++)
+        {
+
+            // koymak istediğimiz row da var mı ona bak.
+            if (board[row][d] == num) {
+                return false;
+            }
+        }
+
+        // colum unique
+        for (int r = 0; r < board.length; r++)
+        {
+
+            // koymak istediğimiz colum da var mı ona bak
+            if (board[r][col] == num)
+            {
+                return false;
+            }
+        }
+
+        // 3x3 kısmı kontrol et
+        int sqrt = (int)Math.sqrt(board.length);
+        int boxRowStart = row - row % sqrt;
+        int boxColStart = col - col % sqrt;
+
+        for (int r = boxRowStart;
+             r < boxRowStart + sqrt; r++)
+        {
+            for (int d = boxColStart;
+                 d < boxColStart + sqrt; d++)
+            {
+                if (board[r][d] == num)
+                {
+                    return false;
+                }
+            }
+        }
+
+
+        return true;
+    }
+
+    public static boolean solveSudoku(
+            int[][] board, int n)
+    {
+        int row = -1;
+        int col = -1;
+        boolean isEmpty = true;
+
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                if (board[i][j] == 0)
+                {
+                    row = i;
+                    col = j;
+
+                    //boş yerleri kontrol et
+                    isEmpty = false;
+                    break;
+                }
+            }
+            if (!isEmpty) {
+                break;
+            }
+        }
+
+
+        if (isEmpty)
+        {
+            return true;
+        }
+
+        // backtrace
+        for (int num = 1; num <= n; num++)
+        {
+            if (isSafe(board, row, col, num))
+            {
+                board[row][col] = num;
+                if (solveSudoku(board, n))
+                {
+                    // print(board, n);
+                    return true;
+                }
+                else
+                {
+                    // replace
+                    board[row][col] = 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static void print(int[][] board, int Len)
+    {
+        HashMap<Integer, String> keys = new HashMap<Integer, String>();
+
+        keys.put(1, "C");
+        keys.put(2, "N");
+        keys.put(3, "G");
+        keys.put(4, "B");
+        keys.put(5, "I");
+        keys.put(6, "M");
+        keys.put(7, "2");
+        keys.put(8, "1");
+        keys.put(9, "3");
+
+        // print
+        for (int r = 0; r < Len; r++)
+        {
+            for (int d = 0; d < Len; d++)
+            {
+                System.out.print(keys.get(board[r][d]));
+                System.out.print(" ");
+            }
+            System.out.print("\n");
+
+            if ((r + 1) % (int)Math.sqrt(Len) == 0)
+            {
+                System.out.print("");
+            }
+        }
+    }
+
+    /////SOLVE SOLVE SOLVE SOLVE SOLVE SOLVE SOLVE
+
+
+    public static void main(String[] args)
+    {
+        int N = 9, K = 20;
+        SudokuCreator sudoku = new SudokuCreator(N, K);
+        sudoku.fillValues();
+        sudoku.printSudoku();
+
+        int[][] board = mat ; {
+
+    }
+        int Len = board.length;
+
+        if (solveSudoku(board, N))
+        {
+            // print solution
+            print(board, Len);
+        }
+        else {
+            System.out.println("No solution");
+        }
+    }
+}
